@@ -53,44 +53,28 @@ func formatLabel(label float64, bytes int) string {
   return strconv.FormatFloat(label, 'g', bytes-1, 64)
 }
 
-func buildXAxis(labels []string, bucketSize int) string {
+func buildXAxis(labels []string, bw int) string {
   out := labels[0]
   for _, l := range labels[1:] {
-    out += strings.Repeat(" ", bucketSize - len(l)) + l
+    out += strings.Repeat(" ", bw - len(l)) + l
   }
   return out
 }
 
-func shouldColor(x int, y int, bucketSize int, h int, hist HistData) bool {
-  // should color if:
-  // x,y is below threshold for count of current bucket
-  // 0 is top, so h is min count
-  // e.g. (0, h) -> (max(counts), min(counts))
-  // x -> which bucket
-  //      x / bucketsize -> index to intervals
-  // y -> count threshold
-  //      threshold_% = (count - min) / (max - min)  // e.g. porportion of range
-  //      y / height < threshold_% => true
-
-  //intervalIndex := int(x / bucketSize)
-  //count := hist.counts[intervalIndex]
-  //threshold = (count - 
-  return true
-}
-
 func printHist(hist HistData) {
-  w, h := 150, 150
+  w, h := 120, 150
   xLabels, yLabels := getLabels(hist)
-  bucketWidth := w / 30
+  bucketWidth := w / len(xLabels)
+  prefixL := bucketWidth / 2
   sxLabels := make([]string, len(xLabels))
   for i, n := range xLabels {
     sxLabels[i] = formatLabel(n, 3)
   }
-  xAxisLabels := buildXAxis(sxLabels, bucketWidth)
+  xAxisLabels := strings.Repeat(" ", prefixL+1) + buildXAxis(sxLabels, bucketWidth)
 
   rows := make([]string, int(h / 10.0))
   // @TODO not hardcode prefix length
-  prefixL := 5
+  cmin, cmax := minmaxi(hist.counts)
   for i, _ := range rows {
     row := ""
     // @TODO make number of y labels variable
@@ -98,11 +82,28 @@ func printHist(hist HistData) {
     if i == (int(len(rows)/2)) { row += strconv.Itoa(yLabels[1]) }
     if i == len(rows)-1 { row += strconv.Itoa(yLabels[0]) }
     whitespace := strings.Repeat(" ", (prefixL - len(row)))
-    rows[i] = row + whitespace + "|"
+    row += whitespace + "|"
+    for x := prefixL+1; x < w; x++ {
+      ci := (x - (x % bucketWidth)) / bucketWidth
+      if ci > len(hist.counts)-1 { ci = len(hist.counts)-1 }
+      c := hist.counts[ci]
+      heightp := float64(len(rows) - i) / float64(len(rows))
+      countp := float64(cmax - cmin) * heightp
+      //fmt.Printf("heightp %f at %d -- countp %f\n", heightp, i, countp)
+      if c >= int(countp) {
+        row += "#"
+      } else {
+        row += " "
+      }
+    }
+    rows[i] = row
   }
   rows = append(rows, xAxisLabels)
+  for _,r := range rows {
+    fmt.Println(r)
+  }
 
-  fmt.Println(strings.Join(rows, "\n"))
+  //fmt.Println(strings.Join(rows, "\n"))
 }
 
 func getLabels(hist HistData) (xLabels []float64 , yLabels []int) {
@@ -117,11 +118,8 @@ func getLabels(hist HistData) (xLabels []float64 , yLabels []int) {
     if c > max { max = c }
     if c < min { min = c }
   }
+  // @TODO: Y labels
   mid := min + (max - min) / 2
-  //l := len(hist.counts)
-  //defaultWidth := 100.0
-  //bucketWidth := int(defaultWidth/float64(l))
-  //output := "" // @TODO: more efficient string building
   yLabels = []int{min, mid, max}
   return xLabels, yLabels
 }
@@ -149,10 +147,12 @@ func getHistData(data []float64, numBuckets int) HistData {
       bucketIntervals[currentBucket] = BucketInterval{floor: bucketFloor, ceil: bucketCeil}
       buckets = append(buckets, bucket)
       bucket = make([]float64, 0)
+      bucket = append(bucket, n)
     } else {
       bucket = append(bucket, n)
     }
   }
+  buckets = append(buckets, bucket)
   bucketSizes := make([]int, numBuckets)
   for i, b := range buckets {
     bucketSizes[i] = len(b)

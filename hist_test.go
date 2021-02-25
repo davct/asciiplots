@@ -4,9 +4,27 @@ import (
   "testing"
 )
 
+func mkhist() HistData {
+  hist := HistData{
+    intervals: []BucketInterval{
+      BucketInterval{
+        floor: 1.0,
+        ceil: 1.8,
+      },
+      BucketInterval{
+        floor: 1.8,
+        ceil: 2.8,
+      },
+    },
+    counts: []int{4, 2},
+  }
+  return hist
+}
+
 func errt(msg string, t *testing.T) {
   t.Errorf("Error %s:\n", msg)
 }
+
 func byNewlines(e string, g string) string {
     return "\n expected: \n" + e + "\n got: \n" + g
 }
@@ -51,21 +69,28 @@ func TestBuildXAxis(t *testing.T) {
     buildXAxis([]string{"1.0"}, 25), t, "buildXAxis")
 }
 
-func TestShouldColor(t *testing.T) {
-  hist := HistData{
-    intervals: []BucketInterval{
-      BucketInterval{
-        floor: 1.0,
-        ceil: 1.8,
-      },
-      BucketInterval{
-        floor: 1.8,
-        ceil: 2.8,
-      },
-    },
-    counts: []int{4, 2},
+func TestGetHistData(t *testing.T) {
+  data := []float64{1, 1, 1, 2, 3}
+  counts := []int{3, 1, 1}
+  outh := getHistData(data, 3)
+
+  for i := 0; i < len(counts); i++ {
+    if counts[i] != outh.counts[i] {
+      t.Errorf("getHistData: Count on histogram is wrong for bucket %d", i)
+      t.Errorf("Expected %d got %d", counts[i], outh.counts[i])
+    }
   }
 
-  expectEqualBool(
-    shouldColor(3, 3, 6, 10, hist), true, t, "should color 1")
+}
+
+func TestGetLabels(t *testing.T) {
+  h := mkhist()
+  xs, ys := getLabels(h)
+  expxs := []float64{1.0, 1.8, 2.8}
+  expys := []int{2, 3, 4}
+  for i := 0; i < 3; i++ {
+    if xs[i] != expxs[i] || ys[i] != expys[i] {
+      t.Errorf("Error in get labels: ")
+    }
+  }
 }
