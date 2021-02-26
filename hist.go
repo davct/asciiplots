@@ -5,28 +5,11 @@ import (
   "sort"
   "strings"
   "strconv"
+  "math"
+  //dev
+  "math/rand"
+  "time"
 )
-
-// @TODO: min max functions are prob unnessecary & messy + index bugs
-func min(data []float64) (min float64) {
-  min = data[0]
-  for _, d := range data {
-    if d < min {
-      min = d
-    }
-  }
-  return min
-}
-
-func max(data []float64) (max float64) {
-  max = data[0]
-  for _, d := range data {
-    if d > max {
-      max = d
-    }
-  }
-  return max
-}
 
 func minmaxi(l []int) (min int, max int) {
   min, max = l[0], l[0]
@@ -37,14 +20,29 @@ func minmaxi(l []int) (min int, max int) {
   return min, max
 }
 
-type BucketInterval struct {
+func minmaxf(l []float64) (min float64, max float64) {
+  min, max = l[0], l[0]
+  for _, n := range l {
+    if n < min { min = n }
+    if n > max { max = n }
+  }
+  return min, max
+}
+
+type roomf struct {
   floor float64;
   ceil float64;
 }
 
 type HistData struct {
-  intervals []BucketInterval;
+  intervals []roomf;
   counts []int;
+}
+
+type HistChart struct {
+  hist HistData;
+  h int; // height in terms of bytes
+  bsize int; // bucket size in bytes
 }
 
 func formatLabel(label float64, bytes int) string {
@@ -61,131 +59,133 @@ func buildXAxis(labels []string, bw int) string {
   return out
 }
 
-func printHist(hist HistData) {
-  w, h := 120, 150
-  xLabels, yLabels := getLabels(hist)
-  bucketWidth := w / len(xLabels)
-  prefixL := bucketWidth / 2
-  sxLabels := make([]string, len(xLabels))
+func attachXAxis(rows []string, xLabels []float64, prefixl, bw int) (newrows []string) {
+  labels := make([]string, len(xLabels))
+  numChars := 3
   for i, n := range xLabels {
-    sxLabels[i] = formatLabel(n, 3)
+    labels[i] = formatLabel(n, numChars)
   }
-  xAxisLabels := strings.Repeat(" ", prefixL) + buildXAxis(sxLabels, bucketWidth+2)
+  prefix := strings.Repeat(" ", prefixl)
+  xaxis := prefix + buildXAxis(labels, bw)
 
-  rows := make([]string, int(h / 10.0))
-  cmin, cmax := minmaxi(hist.counts)
-  for i, _ := range rows {
-    row := ""
+  return append(rows, xaxis)
+}
 
-    // @TODO make number of y labels variable
-    if i == 0 { row += strconv.Itoa(yLabels[2]) }
-    if i == (int(len(rows)/2)) { row += strconv.Itoa(yLabels[1]) }
-    if i == len(rows)-1 { row += strconv.Itoa(yLabels[0]) }
-    whitespace := strings.Repeat(" ", (prefixL - len(row)))
-    row += whitespace + "|"
-    cil := 0
-    upto := 0
-    nowbreak := false
-    for x := prefixL+1; x < w; x++ {
-      ci := cil
-      upto++
-      newb := false
-      if upto > bucketWidth {
-        newb = true
-        upto = 0
-        ci++
-        // @TODO: finda cleaner way to print rows
-        // doing this with 'nowbreak' to get last char on last bucket before
-        // breaking
-        if ci == len(hist.counts) {
-          ci -= 1
-          nowbreak = true
-        }
-      }
-      if (newb){ row += "|"}
-      if nowbreak { break }
-      c := hist.counts[ci]
-      heightp := float64(len(rows) - i) / float64(len(rows))
-      countp := float64(cmax - cmin) * heightp
-      if c >= int(countp) {
-        row += "#"
-      } else {
-        row += " "
-      }
-      cil = ci
-    }
-    rows[i] = row
+func attachYAxis(yLabels []int, rows []string, prefixl int) (newrows []string) {
+  for i := 0; i < len(rows); i++ {
+    // @TODO: Y Label refactor
+    if i == 0 { rows[i] += strconv.Itoa(yLabels[2]) }
+    if i == (int(len(rows)/2)) { rows[i] += strconv.Itoa(yLabels[1]) }
+    if i == len(rows)-1 { rows[i] += strconv.Itoa(yLabels[0]) }
+    ws := strings.Repeat(" ", prefixl - len(rows[i]))
+    rows[i] += ws + "|"
   }
-  rows = append(rows, xAxisLabels)
-  for _,r := range rows {
-    fmt.Println(r)
+  return rows
+}
+
+func checkCell(currentCount, mheight, cheight, min, max int) bool {
+  countRatio := float64(currentCount - min) / float64(max - min)
+  heightRatio := float64(cheight) / float64(mheight)
+  return heightRatio <= countRatio
+}
+
+func calcNumFilledRows(bc, mheight, bmin, bmax int) int {
+  countp := float64(bc - bmin) / float64(bmax - bmin)
+  numfilled := float64(mheight) * countp
+  return int(math.Round(numfilled))
+}
+
+func attachBucket(rows []string, width, count, cmin, cmax int) (newrows []string) {
+  height := calcNumFilledRows(count, len(rows), cmin, cmax)
+  fmt.Println("height:, ", height)
+  for i, k := len(rows)-1, 0; k < height; k++ {
+    rows[i-k] += strings.Repeat("#", width)
   }
+  for i, _ := range rows[:len(rows)-height] {
+    rows[i] += strings.Repeat(" ", width)
+  }
+  for i, _ := range rows { rows[i] += "|" }
+  return rows
+}
+
+func buildHistString(hc HistChart) string {
+  prefixl := int(hc.bsize / 2)
+  xLabels, yLabels := getLabels(hc.hist)
+
+  rows := make([]string, hc.h)
+  rows = attachYAxis(yLabels, rows, prefixl)
+  cmin, cmax := minmaxi(hc.hist.counts)
+  for _, c := range hc.hist.counts {
+    // @TODO compute bucket height -> simpler fill
+    rows = attachBucket(rows, hc.bsize, c, cmin, cmax)
+  }
+  rows = attachXAxis(rows, xLabels, prefixl, hc.bsize)
+  return strings.Join(rows, "\n")
 }
 
 func getLabels(hist HistData) (xLabels []float64 , yLabels []int) {
-  xLabels = make([]float64, len(hist.intervals))
+  xLabels = make([]float64, len(hist.intervals)+1)
   for i, interval := range hist.intervals {
     xLabels[i] = interval.floor
   }
-  xLabels = append(xLabels, hist.intervals[len(hist.intervals)-1].ceil)
-  // @TODO: refactor min max?
-  min, max := hist.counts[0],hist.counts[0]
-  for _, c := range hist.counts {
-    if c > max { max = c }
-    if c < min { min = c }
-  }
+  end := len(hist.intervals)-1
+  xLabels[end+1] = hist.intervals[end].ceil
+  min, max := minmaxi(hist.counts)
+
   // @TODO: Y labels
   mid := min + (max - min) / 2
   yLabels = []int{min, mid, max}
   return xLabels, yLabels
 }
 
-
-func getHistData(data []float64, numBuckets int) HistData {
-  buckets := make([][]float64, numBuckets, numBuckets)
-  min := min(data)
-  max := max(data)
-  distance := max - min
-  bucketSize := distance / float64(numBuckets)
+func getIntervals(data []float64, numbuckets int) []roomf {
   sort.Float64s(data)
-  bucketFloor := min
-  bucketCeil := min + bucketSize
-  currentBucket := 0
-
-  bucketIntervals := make([]BucketInterval, numBuckets)
-  bucketIntervals[currentBucket] = BucketInterval{floor: bucketFloor, ceil: bucketCeil}
-  bucket := make([]float64, 0)
-  // @TODO: decide whether or not to keep bucket->item data or just count
+  res := []roomf{}
+  min, max := minmaxf(data)
+  distance := max - min
+  bsize := distance / float64(numbuckets)
+  floor := min
+  ceil := min + bsize
   for _, n := range data {
-    if n > bucketCeil && numBuckets > currentBucket+1 {
-      bucketFloor = bucketCeil
-      bucketCeil = bucketFloor + bucketSize
-      bucketIntervals[currentBucket] = BucketInterval{floor: bucketFloor, ceil: bucketCeil}
-      buckets[currentBucket] = bucket
-      currentBucket++
-      bucket = make([]float64, 0)
+    if n > ceil {
+      res = append(res, roomf{floor, ceil})
+      floor = ceil
+      ceil += bsize
     }
-    bucket = append(bucket, n)
   }
-  buckets[currentBucket] = bucket
-  bucketSizes := make([]int, numBuckets)
-  for i, b := range buckets {
-    bucketSizes[i] = len(b)
+  res = append(res, roomf{floor, ceil})
+  return res
+}
+
+func getHistData(data []float64, numbuckets int) HistData {
+  if len(data) == 0 {
+    return HistData{
+      intervals: []roomf{},
+      counts: []int{},
+    }
   }
-  return HistData{intervals: bucketIntervals, counts: bucketSizes}
+  sort.Float64s(data)
+  intervals := getIntervals(data, numbuckets)
+  counts := make([]int, numbuckets, numbuckets)
+  index := 0
+  for _, d := range data {
+    croom := intervals[index]
+    if d > croom.ceil && index+1 < numbuckets {
+      index++
+    }
+    counts[index]++
+  }
+  return HistData{intervals, counts}
 }
 
 func main() {
-  data := []float64{1.0, 2.0, 3.0}
-  for i := 1; i < 10; i++ {
-    for j:= i; j < 10; j++ {
-      data = append(data, float64(i))
-    }
+  data := []float64{}
+  rand.Seed(time.Now().UTC().UnixNano())
+  for i := 0; i < 500; i++ {
+    data = append(data, rand.Float64())
   }
-  sort.Float64s(data)
-  fmt.Println(data)
   hist := getHistData(data, 10)
-  printHist(hist)
-  hist = getHistData(data, 5)
-  printHist(hist)
+  fmt.Println(buildHistString(HistChart{
+    hist: hist, h: 10, bsize: 10,
+  }))
 }

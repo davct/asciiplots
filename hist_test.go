@@ -4,14 +4,17 @@ import (
   "testing"
 )
 
+// @TODO: more cases
+
+// @TODO: don't do this
 func mkhist() HistData {
   hist := HistData{
-    intervals: []BucketInterval{
-      BucketInterval{
+    intervals: []roomf{
+      roomf{
         floor: 1.0,
         ceil: 1.8,
       },
-      BucketInterval{
+      roomf{
         floor: 1.8,
         ceil: 2.8,
       },
@@ -21,21 +24,13 @@ func mkhist() HistData {
   return hist
 }
 
-func errt(msg string, t *testing.T) {
-  t.Errorf("Error %s:\n", msg)
-}
-
 func byNewlines(e string, g string) string {
     return "\n expected: \n" + e + "\n got: \n" + g
 }
 
-func TestUtils(t *testing.T) {
-  min, max := minmaxi([]int{1, 2, 3, 4, 5, 4})
-  if min != 1 {
-    errt("error min wrong", t)
-  }
-  if max != 5 {
-    errt("error max wrong", t)
+func compareStrings(e string, g string, t *testing.T, env string) {
+  if e != g {
+    t.Errorf("Error in %s: %s", env, byNewlines(e, g))
   }
 }
 
@@ -45,9 +40,22 @@ func expectEqualBool(a bool, b bool, t *testing.T, env string) {
   }
 }
 
-func compareStrings(e string, g string, t *testing.T, env string) {
-  if e != g {
-    t.Errorf("Error in %s: %s", env, byNewlines(e, g))
+func TestUtils(t *testing.T) {
+  mini, maxi := minmaxi([]int{1, 2, 3, 4, 5, 4})
+  msg := "Error in testing utils on min/max"
+  if mini != 1 {
+    t.Errorf("Error %s:\n", msg)
+  }
+  if maxi != 5 {
+    t.Errorf("Error %s:\n", msg)
+  }
+
+  minf, maxf := minmaxf([]float64{1.0, 1.1, 1.3, 0.2})
+  if minf != float64(0.2) {
+    t.Errorf("Error %s:\n", msg)
+  }
+  if maxf != float64(1.3) {
+    t.Errorf("Error %s:\n", msg)
   }
 }
 
@@ -94,3 +102,24 @@ func TestGetLabels(t *testing.T) {
     }
   }
 }
+
+func TestGetIntervals(t *testing.T) {
+  data := []float64{1.0, 2.0, 3.0, 4.0}
+  numbuckets := 3
+  got := getIntervals(data, numbuckets)
+  expected := []roomf{
+    roomf{1.0, 2.0},
+    roomf{2.0, 3.0},
+    roomf{3.0, 4.0},
+  }
+  for i, room := range got {
+    if room != expected[i] {
+      t.Errorf("Get interval test 1 failed.\n")
+    }
+  }
+}
+
+
+
+
+
