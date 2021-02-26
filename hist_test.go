@@ -60,6 +60,11 @@ func TestUtils(t *testing.T) {
 }
 
 func TestFormatLabel(t *testing.T) {
+  // trim trailing dot
+  compareStrings("50", formatLabel(50.002, 3), t, "formatLabel")
+
+  compareStrings("0.0", formatLabel(26.0/10000.0, 3), t, "formatLabel")
+  compareStrings("3.3", formatLabel(3 + (1.0/3.0), 3), t, "formatLabel")
   compareStrings("3.141", formatLabel(3.141, 5), t, "formatLabel")
   compareStrings("3.14", formatLabel(3.141, 4), t, "formatLabel")
   compareStrings("3.1", formatLabel(3.141, 3), t, "formatLabel")
