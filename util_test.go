@@ -2,6 +2,7 @@ package main
 
 import (
 	"testing"
+  "sort"
 )
 
 func TestMinMax(t *testing.T) {
@@ -31,10 +32,10 @@ func TestMinMax(t *testing.T) {
 	}
 }
 
-func TestStringify(t *testing.T) {
+func TestConversions(t *testing.T) {
 	inp := []int{1, 2, 3}
 	expected := []string{"1", "2", "3"}
-	got := stringifyis(inp)
+	got := intsToStrings(inp)
 	for i, _ := range got {
 		if got[i] != expected[i] {
 			t.Errorf("Error changing int slice to string slice...")
@@ -53,4 +54,16 @@ func TestTruncatef(t *testing.T) {
 			t.Errorf("Expected %f but got %f", expected[i], out)
 		}
 	}
+}
+
+
+func TestGetSortedCopy(t *testing.T) {
+  input := []float64{1.0, 0, 2.0, 5.0, 3.0}
+  got := getSortedCopy(input)
+  sort.Float64s(input)
+  epsilon := 0.0001
+  equal, _ := areFloatSlicesEqual(got, input, epsilon)
+  if equal != true {
+    t.Errorf("TestGetSortedCopy 1: got a bad copy")
+  }
 }

@@ -1,6 +1,10 @@
 package main
 
-import "strconv"
+import (
+  "strconv"
+  "sort"
+)
+
 
 func minmaxi(l []int) (min int, max int) {
 	min, max = l[0], l[0]
@@ -47,7 +51,7 @@ func minmaxls(strings []string) (minl, maxl int) {
 	return minl, maxl
 }
 
-func stringifyis(is []int) (rs []string) {
+func intsToStrings(is []int) (rs []string) {
 	for _, i := range is {
 		rs = append(rs, strconv.Itoa(i))
 	}
@@ -60,4 +64,12 @@ func truncatef(f float64, length int) float64 {
 		transferpow *= 10
 	}
 	return float64(int(f*transferpow)) / transferpow
+}
+
+func getSortedCopy(data []float64) (copied []float64) {
+  for _, e := range data {
+    copied = append(copied, e)
+  }
+  sort.Float64s(copied)
+  return copied
 }

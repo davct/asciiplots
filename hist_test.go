@@ -57,14 +57,14 @@ func TestBuildXAxis(t *testing.T) {
 		buildXAxis([]string{"1.0"}, 25), t, "buildXAxis")
 }
 
-func TestGetHistData(t *testing.T) {
+func TestBuildHistogramData(t *testing.T) {
 	data := []float64{1, 1, 1, 2, 3}
 	counts := []int{3, 1, 1}
-	outh := getHistData(data, 3)
+	outh := buildHistogramData(data, 3)
 
 	for i := 0; i < len(counts); i++ {
 		if counts[i] != outh.counts[i] {
-			t.Errorf("getHistData: Count on histogram is wrong for bucket %d", i)
+			t.Errorf("BuildHistogramData: Count on histogram is wrong for bucket %d", i)
 			t.Errorf("Expected %d got %d", counts[i], outh.counts[i])
 		}
 	}
