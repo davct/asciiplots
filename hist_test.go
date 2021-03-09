@@ -60,7 +60,7 @@ func TestBuildXAxis(t *testing.T) {
 func TestBuildHistogramData(t *testing.T) {
 	data := []float64{1, 1, 1, 2, 3}
 	counts := []int{3, 1, 1}
-	outh := buildHistogramData(data, 3)
+	outh := getHistogramData(data, 3)
 
 	for i := 0; i < len(counts); i++ {
 		if counts[i] != outh.counts[i] {
