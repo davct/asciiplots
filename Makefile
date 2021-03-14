@@ -1,6 +1,10 @@
+objects = main.go hist.go util.go plot.go
+run = go run
+
+
 wtest:
 	go test
-	go run hist.go util.go
+	$(run) $(objects)
 
 main:
-	go run hist.go util.go
+	$(run) $(objects)
