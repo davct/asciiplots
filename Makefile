@@ -1,4 +1,4 @@
-objects = main.go hist.go util.go plot.go
+objects = main.go hist.go util.go plot.go label.go
 run = go run
 
 

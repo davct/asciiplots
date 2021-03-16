@@ -21,7 +21,7 @@ func TestAttachBar(t *testing.T) {
   rows := make([]string, 1)
   prefixLength := 0
   plot := AsciiPlot{rows, prefixLength}
-  plot.attachBar(1, 1)
+  plot.AttachBar(1, 1)
   expected := "#|"
   got := plot.Report()
   if got != expected {

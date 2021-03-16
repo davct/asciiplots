@@ -44,17 +44,17 @@ func newHistogram(inputData []float64, numbuckets int) Histogram {
 func (h *Histogram) MakePlot(height, width int) string {
   bucketWidth := int(width / len(h.intervals))
 	rows := make([]string, height)
-	xLabels, yLabels := h.getLabels()
+	xLabels, yLabels := h.GetLabels()
 	stringifiedYLabels := intsToStrings(yLabels)
   prefixLength := calculatePrefixLength(stringifiedYLabels)
   plot := AsciiPlot{
     rows: rows,
     prefixLength: prefixLength,
   }
-	plot.attachYAxis(stringifiedYLabels)
+	plot.AttachYAxis(stringifiedYLabels)
   heights, widths := h.MakeBucketParams(height, bucketWidth)
-  plot.attachBars(heights, widths)
-	plot.attachXAxis(xLabels, bucketWidth+1)
+  plot.AttachBars(heights, widths)
+	plot.AttachXAxis(xLabels, bucketWidth+1)
   return plot.Report()
 }
 
@@ -79,7 +79,7 @@ func (h *Histogram) CalculateBucketHeights(maxHeight int) (heights []int) {
   return heights
 }
 
-func (h *Histogram) getLabels() (xLabels []float64, yLabels []int) {
+func (h *Histogram) GetLabels() (xLabels []float64, yLabels []int) {
 	xLabels = make([]float64, len(h.intervals)+1)
 	for i, interval := range h.intervals {
 		xLabels[i] = interval.floor
