@@ -15,4 +15,7 @@ func TestMakeAxisLabel(t *testing.T) {
       t.Fail()
     }
   }
+  if MakeAxisLabel(0, 0) != "" {
+    t.Fail()
+  }
 }

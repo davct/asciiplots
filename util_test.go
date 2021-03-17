@@ -30,6 +30,11 @@ func TestMinMax(t *testing.T) {
 	if maxl != 3 {
 		t.Errorf("Error %s:\n", msg+"stringl")
 	}
+
+  zmin, zmax := minmaxls([]string{})
+  if zmin != 0 || zmax != 0 {
+    t.Fail()
+  }
 }
 
 func TestConversions(t *testing.T) {

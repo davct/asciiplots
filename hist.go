@@ -44,7 +44,7 @@ func newHistogram(inputData []float64, numbuckets int) Histogram {
 func (h *Histogram) MakePlot(height, width int) string {
   bucketWidth := int(width / len(h.intervals))
 	rows := make([]string, height)
-	xLabels, yLabels := h.GetLabels()
+	xLabels, yLabels := h.GetDefaultLabels()
 	stringifiedYLabels := intsToStrings(yLabels)
   prefixLength := calculatePrefixLength(stringifiedYLabels)
   plot := AsciiPlot{
@@ -52,14 +52,15 @@ func (h *Histogram) MakePlot(height, width int) string {
     prefixLength: prefixLength,
   }
 	plot.AttachYAxis(stringifiedYLabels)
-  heights, widths := h.MakeBucketParams(height, bucketWidth)
+  heights, widths := h.GetBucketDimensions(height, bucketWidth)
   plot.AttachBars(heights, widths)
 	plot.AttachXAxis(xLabels, bucketWidth+1)
   return plot.Report()
 }
 
-func (h *Histogram) MakeBucketParams(maxHeight, defaultWidth int) (heights, widths []int) {
-  heights = h.CalculateBucketHeights(maxHeight)
+func (h *Histogram) GetBucketDimensions(maxHeight, defaultWidth int) (heights, widths []int) {
+  hardcodedMinHeight := 2
+  heights = h.CalculateBucketHeights(hardcodedMinHeight, maxHeight)
   widths = make([]int, len(heights))
   for i, _ := range widths {
     widths[i] = defaultWidth
@@ -67,19 +68,22 @@ func (h *Histogram) MakeBucketParams(maxHeight, defaultWidth int) (heights, widt
   return heights, widths
 }
 
-func (h *Histogram) CalculateBucketHeights(maxHeight int) (heights []int) {
+func (h *Histogram) CalculateBucketHeights(minHeight, maxHeight int) (heights []int) {
   cmin, cmax := minmaxi(h.counts)
   for _, c := range h.counts {
     thisDiff := c - cmin
     maxDiff := cmax - cmin
     percentOfMax := float64(thisDiff) / float64(maxDiff)
     bucketHeight := int(math.Round(float64(maxHeight) * percentOfMax))
+    if bucketHeight < minHeight {
+      bucketHeight = minHeight
+    }
     heights = append(heights, bucketHeight)
   }
   return heights
 }
 
-func (h *Histogram) GetLabels() (xLabels []float64, yLabels []int) {
+func (h *Histogram) GetDefaultLabels() (xLabels []float64, yLabels []int) {
 	xLabels = make([]float64, len(h.intervals)+1)
 	for i, interval := range h.intervals {
 		xLabels[i] = interval.floor

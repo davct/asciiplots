@@ -3,10 +3,6 @@ package main
 //import "fmt"
 
 func areFloatsEqual(first float64, second float64, epsilon float64) bool {
-  if epsilon < 0 {
-    epsilon = -epsilon
-  }
-
   var diff float64
   if first > second {
     diff = first - second
